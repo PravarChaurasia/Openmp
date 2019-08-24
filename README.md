@@ -1,0 +1,2 @@
+# Openmp
+Parallel Programming Codes
