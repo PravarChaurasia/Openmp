@@ -1,0 +1,130 @@
+#used in  : Parallel Programming
+#compiler : mpi 
+#file extension : .c 
+#compile: mpi -o <obj_name> <file_name>
+#run: mpirun -np <no of process> <obj_name>
+
+Keywords:
+
+.MPI_Init -- intialise MPI
+.MPI_Comm_rank -- give process ID no.
+.MPI_Comm_size -- no of process.
+.MPI_Reduce  --to perform a reductiono peration.
+.MPI_Finalize -- to shut down MPI.
+.MPI_Barrier  - to performe barrier synchorniztn.
+.MPI_Wtime   -- similar to omp_get_Wtime();
+.MPI_Wtick -- find accuracy of the timer.
+----------------
+# POints:
+
+.User specifies the no of COncurrent Process when the program begins,and typically the no of active process remains constant throughout the exectn of program.
+
+.Every Process executes the same program but bcoz each has unique ID, diff process may perform diff operations as program unfolds.
+
+.A process alternatively performs computation on its local variable(mem) and COMMUNICATE(msg passing) with other process or I/O devices.
+
+.Communication mantains -- Data transfer.
+						-- Synchronizatn.
+
+.MP model adv -- MP program runs on MIMD(multi inst multi mem/data) archi.
+{MP program on multiprocess -using Shared Variable as MEssage Buffer}
+			
+			-- debugging in MP program is simpler than debugging Shared-Variable Program.
+{bcoz it's not possible to overwrite a var controlled by another process.}
+
+			-- easy to construct Program that executes deterministically.
+
+----------------------
+
+# include<mpi.h>
+
+    // argc, agrv parameters are passes to the fn which initializes MPI.
+
+	int main(int argc,char *argv[]){}
+
+	/* main fn will have 3 var :
+	i : loop index .
+	id: process id.(0 to (p-1))
+	p: active process.
+	*/
+
+Note: Each process has its own copy of all Variables declared in Program (external-declared ourside the fn,local var).
+--------------------
+# check_circuit(id,i); 
+deternmines if the i^th combination of input satisfies the circuit.
+
+-----------------
+# MPI_Init(&argc,&argv);
+
+.the 1st fn call by every process is to call MPI_Init ,which allows system to do all setup needed to handle further call of MPI library(fn's).
+
+.Not required to be the frst executable statement,or to be located in fn main.The only condition is :
+TO be called before any other MPI fn.
+
+# MPI_Comm_rank/size
+
+.Comm- communicator(is a object that provides the environment for message passing amongs process).
+
+.After MPI has initialized, every active process bcome member of a comm called MPI_COMM_WORLD(default communicator tht we get for free).
+
+{
+	MPI_Comm_rank(MPI_COMM_WORLD,&id);
+	MPI_Comm_size(MPI_COMM_WORLD,&p);
+}
+
+. After process knws its rank and total no of process, it may check 
+
+{
+	for(int i=id;i<65536;i+=p)
+	check_circuit(id,i);
+}
+
+.after loop completed print a msg of completion and put a call to 'fflush()' after evry print statement. 
+
+fflush()- flushes the op buffer.and help ensure the eventual appearance of msg on std op,evn if the parallel program crashes.
+
+{
+	pf("process %d is done\n",id);
+	fflush(stdout);
+} 
+
+----------
+
+# MPI_Finalize
+
+.after a process completed all of its MPI lib calls,it calls the fn MPI_Finalize,allowing the sys to free up resources(such as mem) that have been allocated to MPI.
+
+{
+	MPI_Finalize();
+	return 0;
+}
+
+-------------
+
+# MPI_Barrier(MPI_Comm comm);
+  comm-> communicator(handle)
+Blocks until all processes in the communicator have reached this routine.
+ex-  MPI_Barrier(MPI_COMM_WORLD);
+
+#  MPI_Send and MPI_Recv to perform standard point-to-point communication.
+
+.MPI Send(Message, BUFFER SIZE, MPI CHAR, Destination, Destination tag, MPI COMM WORLD);
+
+.MPI Recv(Message, BUFFER SIZE, MPI CHAR, Source, Source tag, MPI COMM WORLD, &status);
+
+.MPI_Status status; --- recv takes it address as its arg.
+
+Link:(https://mpitutorial.com/tutorials/dynamic-receiving-with-mpi-probe-and-mpi-status/)
+
+If we pass an MPI_Status structure to the MPI_Recv function, it will be populated with additional information about the receive operation after it completes. The three primary pieces of information include:
+.Rank of the Sender.
+.Tag of the Msg.
+.Length of the Msg. 
+---------------------------------------
+# Blocking communication is done using MPI_Send() and MPI_Recv(). These functions do not return (i.e., they block) until the communication is finished. Simplifying somewhat, this means that the buffer passed to MPI_Send() can be reused, either because MPI saved it somewhere, or because it has been received by the destination. Similarly, MPI_Recv() returns when the receive buffer has been filled with valid data.
+
+In contrast, non-blocking communication is done using MPI_Isend() and MPI_Irecv(). These function return immediately (i.e., they do not block) even if the communication is not finished yet. You must call MPI_Wait() or MPI_Test() to see whether the communication has finished.
+
+Blocking communication is used when it is sufficient, since it is somewhat easier to use. Non-blocking communication is used when necessary, for example, you may call MPI_Isend(), do some computations, then do MPI_Wait(). This allows computations and communication to overlap, which generally leads to improved performance.
+
+
