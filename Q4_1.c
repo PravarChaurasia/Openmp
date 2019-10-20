@@ -26,7 +26,7 @@ int main()
 				c[i][j]+= a[i][k]*b[k][j];
 			}
 		end_t=omp_get_wtime();
-		printf("Execution time having %d threads is %.15lf\n",n1,end_t-start_t);
+		printf("Execution time having %d threads is %.15lf\n",n1,end_t-start_t);	
 		// parallel mm	
 	omp_set_num_threads(8);
 	start_t=omp_get_wtime();
